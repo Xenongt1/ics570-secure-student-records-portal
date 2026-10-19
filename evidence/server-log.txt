@@ -1,0 +1,99 @@
+
+> secure-student-records-portal@1.0.0 start
+> node src/server.js
+
+Student Records Portal listening on http://localhost:3001 (RP ID: localhost)
+2026-10-19T08:20:31.627Z GET /api/me -> 401 user=-
+2026-10-19T08:22:31.204Z GET / -> 200 user=-
+2026-10-19T08:22:31.214Z GET /app.js -> 200 user=-
+2026-10-19T08:22:31.214Z GET /style.css -> 200 user=-
+2026-10-19T08:22:31.215Z GET /ui.js -> 200 user=-
+2026-10-19T08:22:31.216Z GET /vendor/simplewebauthn-browser.js -> 200 user=-
+2026-10-19T08:22:33.790Z GET /img/students.jpg -> 200 user=-
+2026-10-19T08:22:33.819Z GET /api/me -> 401 user=-
+2026-10-19T08:22:33.822Z GET /api/me -> 401 user=-
+2026-10-19T08:22:38.307Z POST /api/enroll/start -> 200 user=-
+2026-10-19T08:22:38.323Z POST /api/register/options -> 200 user=-
+REGISTER OK user=S001 credential=Q4uix6K4…
+2026-10-19T08:22:38.385Z POST /api/register/verify -> 200 user=-
+2026-10-19T08:22:40.044Z GET / -> 304 user=-
+2026-10-19T08:22:40.048Z GET /style.css -> 304 user=-
+2026-10-19T08:22:40.049Z GET /vendor/simplewebauthn-browser.js -> 304 user=-
+2026-10-19T08:22:40.050Z GET /app.js -> 304 user=-
+2026-10-19T08:22:40.050Z GET /ui.js -> 304 user=-
+2026-10-19T08:22:40.052Z GET /api/me -> 401 user=-
+2026-10-19T08:22:40.053Z GET /api/me -> 401 user=-
+2026-10-19T08:22:40.992Z POST /api/login/options -> 200 user=-
+LOGIN OK user=S001 role=student
+2026-10-19T08:22:41.020Z POST /api/login/verify -> 200 user=S001
+2026-10-19T08:22:41.021Z GET /api/me -> 200 user=S001
+2026-10-19T08:22:41.023Z GET /api/students/S001 -> 200 user=S001
+2026-10-19T08:22:42.581Z GET /security-tests.html -> 200 user=S001
+2026-10-19T08:22:42.584Z GET /style.css -> 304 user=S001
+2026-10-19T08:22:42.585Z GET /vendor/simplewebauthn-browser.js -> 304 user=S001
+LOGOUT user=S001
+2026-10-19T08:22:42.624Z POST /api/logout -> 200 user=-
+2026-10-19T08:22:42.640Z POST /api/login/options -> 200 user=-
+LOGIN FAIL user=S001 reason="signature did not verify with the stored public key"
+2026-10-19T08:22:42.651Z POST /api/login/verify -> 401 user=-
+2026-10-19T08:22:42.651Z GET /api/me -> 401 user=-
+2026-10-19T08:22:43.558Z POST /api/logout -> 200 user=-
+2026-10-19T08:22:43.572Z POST /api/login/options -> 200 user=-
+LOGIN OK user=S001 role=student
+2026-10-19T08:22:43.582Z POST /api/login/verify -> 200 user=S001
+LOGOUT user=S001
+2026-10-19T08:22:43.584Z POST /api/logout -> 200 user=-
+2026-10-19T08:22:43.586Z POST /api/login/options -> 200 user=-
+LOGIN FAIL user=S001 reason="Unexpected authentication response challenge "[redacted]", expected "[redacted]""
+2026-10-19T08:22:43.587Z POST /api/login/verify -> 401 user=-
+2026-10-19T08:22:43.589Z GET /api/me -> 401 user=-
+2026-10-19T08:22:45.198Z GET / -> 304 user=-
+2026-10-19T08:22:45.201Z GET /style.css -> 304 user=-
+2026-10-19T08:22:45.201Z GET /app.js -> 304 user=-
+2026-10-19T08:22:45.202Z GET /ui.js -> 304 user=-
+2026-10-19T08:22:45.202Z GET /vendor/simplewebauthn-browser.js -> 304 user=-
+2026-10-19T08:22:45.203Z GET /api/me -> 401 user=-
+2026-10-19T08:22:45.204Z GET /api/me -> 401 user=-
+2026-10-19T08:22:46.140Z POST /api/login/options -> 200 user=-
+LOGIN OK user=S001 role=student
+2026-10-19T08:22:46.165Z POST /api/login/verify -> 200 user=S001
+2026-10-19T08:22:46.165Z GET /api/me -> 304 user=S001
+2026-10-19T08:22:46.166Z GET /api/students/S001 -> 304 user=S001
+2026-10-19T08:22:46.178Z GET /security-tests.html -> 304 user=S001
+2026-10-19T08:22:46.182Z GET /style.css -> 304 user=S001
+2026-10-19T08:22:46.183Z GET /vendor/simplewebauthn-browser.js -> 304 user=S001
+2026-10-19T08:22:46.224Z GET /api/students/S001 -> 304 user=S001
+AUTHZ DENY user=S001 role=student action=read:student/S002 reason="students may read only their own record"
+2026-10-19T08:22:47.158Z GET /api/students/S002 -> 403 user=S001
+AUTHZ DENY user=S001 role=student action=update:grade/C101/S001 reason="only lecturers may update grades"
+2026-10-19T08:22:47.223Z POST /api/courses/C101/grades/S001 -> 403 user=S001
+2026-10-19T08:22:47.238Z GET /api/students/S001 -> 304 user=S001
+LOGOUT user=S001
+2026-10-19T08:22:48.873Z POST /api/logout -> 200 user=-
+2026-10-19T08:22:48.893Z GET /api/students/S001 -> 401 user=-
+2026-10-19T08:22:50.652Z GET / -> 200 user=-
+2026-10-19T08:22:50.657Z GET /style.css -> 200 user=-
+2026-10-19T08:22:50.657Z GET /vendor/simplewebauthn-browser.js -> 200 user=-
+2026-10-19T08:22:50.658Z GET /ui.js -> 200 user=-
+2026-10-19T08:22:50.658Z GET /app.js -> 200 user=-
+2026-10-19T08:22:51.138Z GET /api/me -> 401 user=-
+2026-10-19T08:22:51.150Z GET /api/me -> 401 user=-
+2026-10-19T08:22:51.160Z GET /img/students.jpg -> 200 user=-
+2026-10-19T08:22:52.874Z POST /api/enroll/start -> 200 user=-
+2026-10-19T08:22:52.916Z POST /api/register/options -> 200 user=-
+REGISTER OK user=L001 credential=fs7jdjaq…
+2026-10-19T08:22:52.960Z POST /api/register/verify -> 200 user=-
+2026-10-19T08:22:52.973Z GET / -> 304 user=-
+2026-10-19T08:22:52.977Z GET /style.css -> 304 user=-
+2026-10-19T08:22:52.977Z GET /app.js -> 304 user=-
+2026-10-19T08:22:52.977Z GET /ui.js -> 304 user=-
+2026-10-19T08:22:52.977Z GET /vendor/simplewebauthn-browser.js -> 304 user=-
+2026-10-19T08:22:52.980Z GET /api/me -> 401 user=-
+2026-10-19T08:22:52.981Z GET /api/me -> 401 user=-
+2026-10-19T08:22:53.940Z POST /api/login/options -> 200 user=-
+LOGIN OK user=L001 role=lecturer
+2026-10-19T08:22:54.018Z POST /api/login/verify -> 200 user=L001
+2026-10-19T08:22:54.020Z GET /api/me -> 200 user=L001
+2026-10-19T08:22:54.023Z GET /api/courses/C101/roster -> 200 user=L001
+GRADE UPDATE by=L001 C101/S002 B -> A-
+2026-10-19T08:22:54.058Z POST /api/courses/C101/grades/S002 -> 200 user=L001

@@ -1,0 +1,65 @@
+// Seeds the datastore with SYNTHETIC accounts, a course, a lecturer-course
+// assignment and fictional grades. Each account gets a one-time enrollment code
+// (only its SHA-256 hash is stored) which is needed to register the first passkey.
+import crypto from 'node:crypto';
+import { pathToFileURL } from 'node:url';
+import { writeFresh, DB_FILE } from './db.js';
+
+export const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
+const newCode = () => crypto.randomBytes(5).toString('hex').toUpperCase(); // e.g. 9F3A1C07B2
+const webauthnUserId = () => crypto.randomBytes(16).toString('base64url'); // opaque, not the student ID
+
+export function seed() {
+  const accounts = [
+    { id: 'S001', role: 'student', displayName: 'Ama Owusu (fictional)' },
+    { id: 'S002', role: 'student', displayName: 'Kwame Asante (fictional)' },
+    { id: 'S003', role: 'student', displayName: 'Efua Mensah (fictional)' },
+    { id: 'L001', role: 'lecturer', displayName: 'Dr. Yaw Boateng (fictional)' },
+    { id: 'L002', role: 'lecturer', displayName: 'Dr. Akosua Darko (fictional)' },
+  ];
+
+  const codes = {};
+  const users = accounts.map((a) => {
+    const code = newCode();
+    codes[a.id] = code;
+    return {
+      ...a,
+      webauthnUserId: webauthnUserId(),
+      enrollmentCodeHash: sha256(code),
+      enrollmentUsed: false,
+    };
+  });
+
+  const data = {
+    users,
+    credentials: [],
+    students: [
+      { id: 'S001', name: 'Ama Owusu', programme: 'BSc Computer Science', year: 3, email: 's001@example.edu' },
+      { id: 'S002', name: 'Kwame Asante', programme: 'BSc Management Information Systems', year: 3, email: 's002@example.edu' },
+      { id: 'S003', name: 'Efua Mensah', programme: 'BSc Computer Engineering', year: 2, email: 's003@example.edu' },
+    ],
+    courses: [
+      { id: 'C101', title: 'Introduction to Secure Systems', lecturerIds: ['L001'] },
+      { id: 'C102', title: 'Data Structures', lecturerIds: ['L002'] },
+    ],
+    enrollments: [
+      { studentId: 'S001', courseId: 'C101', grade: 'B+' },
+      { studentId: 'S001', courseId: 'C102', grade: 'A-' },
+      { studentId: 'S002', courseId: 'C101', grade: 'B' },
+      { studentId: 'S003', courseId: 'C102', grade: 'A' },
+    ],
+    gradeAudit: [],
+  };
+
+  writeFresh(data);
+  return codes;
+}
+
+// Run directly: `npm run seed`
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const codes = seed();
+  console.log(`Seeded synthetic data into ${DB_FILE}`);
+  console.log('One-time enrollment codes (synthetic, lab use only):');
+  for (const [id, code] of Object.entries(codes)) console.log(`  ${id}  ${code}`);
+  console.log('Each code works once, to register that account\'s first passkey. Re-run "npm run seed" to reset everything.');
+}

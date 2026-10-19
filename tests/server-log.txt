@@ -1,0 +1,51 @@
+Student Records Portal listening on http://localhost:3100 (RP ID: localhost)
+2026-10-19T08:31:46.382Z POST /api/enroll/start -> 200 user=-
+2026-10-19T08:31:46.391Z POST /api/register/options -> 200 user=-
+REGISTER OK user=S001 credential=u2dIN6ax…
+2026-10-19T08:31:46.404Z POST /api/register/verify -> 200 user=-
+2026-10-19T08:31:46.409Z POST /api/enroll/start -> 200 user=-
+2026-10-19T08:31:46.411Z POST /api/register/options -> 200 user=-
+REGISTER OK user=S002 credential=UlysnMjL…
+2026-10-19T08:31:46.419Z POST /api/register/verify -> 200 user=-
+2026-10-19T08:31:46.422Z POST /api/enroll/start -> 200 user=-
+2026-10-19T08:31:46.424Z POST /api/register/options -> 200 user=-
+REGISTER OK user=L001 credential=pRWAFY74…
+2026-10-19T08:31:46.434Z POST /api/register/verify -> 200 user=-
+2026-10-19T08:31:46.440Z POST /api/login/options -> 200 user=-
+LOGIN OK user=S001 role=student
+2026-10-19T08:31:46.454Z POST /api/login/verify -> 200 user=S001
+2026-10-19T08:31:46.457Z GET /api/me -> 200 user=S001
+2026-10-19T08:31:46.459Z POST /api/login/options -> 200 user=-
+LOGIN FAIL user=S001 reason="signature did not verify with the stored public key"
+2026-10-19T08:31:46.462Z POST /api/login/verify -> 401 user=-
+2026-10-19T08:31:46.463Z GET /api/me -> 401 user=-
+2026-10-19T08:31:46.465Z POST /api/login/options -> 200 user=-
+LOGIN OK user=S001 role=student
+2026-10-19T08:31:46.469Z POST /api/login/verify -> 200 user=S001
+2026-10-19T08:31:46.470Z POST /api/login/options -> 200 user=-
+LOGIN FAIL user=S001 reason="Unexpected authentication response challenge "[redacted]", expected "[redacted]""
+2026-10-19T08:31:46.472Z POST /api/login/verify -> 401 user=-
+2026-10-19T08:31:46.472Z GET /api/me -> 401 user=-
+2026-10-19T08:31:46.473Z POST /api/login/options -> 200 user=-
+LOGIN FAIL user=S001 reason="Unexpected authentication response origin "[redacted]", expected "[redacted]""
+2026-10-19T08:31:46.474Z POST /api/login/verify -> 401 user=-
+2026-10-19T08:31:46.476Z GET /api/me -> 401 user=-
+2026-10-19T08:31:46.477Z GET /api/students/S001 -> 401 user=-
+2026-10-19T08:31:46.479Z GET /api/students/S001 -> 200 user=S001
+AUTHZ DENY user=S001 role=student action=read:student/S002 reason="students may read only their own record"
+2026-10-19T08:31:46.482Z GET /api/students/S002 -> 403 user=S001
+AUTHZ DENY user=S001 role=student action=update:grade/C101/S001 reason="only lecturers may update grades"
+2026-10-19T08:31:46.484Z POST /api/courses/C101/grades/S001 -> 403 user=S001
+2026-10-19T08:31:46.487Z POST /api/login/options -> 200 user=-
+LOGIN OK user=L001 role=lecturer
+2026-10-19T08:31:46.495Z POST /api/login/verify -> 200 user=L001
+GRADE UPDATE by=L001 C101/S002 B -> A-
+2026-10-19T08:31:46.498Z POST /api/courses/C101/grades/S002 -> 200 user=L001
+AUTHZ DENY user=L001 role=lecturer action=update:grade/C102/S003 reason="lecturer is not assigned to this course"
+2026-10-19T08:31:46.500Z POST /api/courses/C102/grades/S003 -> 403 user=L001
+AUTHZ DENY user=L001 role=lecturer action=read:student/S003 reason="student is not in any course assigned to this lecturer"
+2026-10-19T08:31:46.503Z GET /api/students/S003 -> 403 user=L001
+2026-10-19T08:31:46.505Z GET /api/students/S001 -> 200 user=L001
+2026-10-19T08:31:46.507Z POST /api/enroll/start -> 403 user=-
+LOGOUT user=L001
+2026-10-19T08:31:46.508Z POST /api/logout -> 200 user=-

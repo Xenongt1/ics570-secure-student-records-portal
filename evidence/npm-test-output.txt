@@ -1,0 +1,21 @@
+
+> secure-student-records-portal@1.0.0 test
+> node tests/run-tests.js
+
+PASS  T1   S001           Enroll with one-time code, register passkey  ->  HTTP 200; credential o_7ovNfj9w… stored for S001, publicKey 103 chars (b64url COSE)
+PASS  T2   S001           Sign in with registered passkey  ->  HTTP 200; GET /api/me -> 200 (S001, student)
+PASS  T3a  S001 (altered) Submit sign-in response with 1 bit of signature flipped  ->  HTTP 401 {"error":"sign-in failed"}; GET /api/me -> 401
+PASS  T3b  S001 (replay)  Replay a previously accepted sign-in response  ->  1st use HTTP 200; replay HTTP 401; GET /api/me -> 401
+PASS  T3c  S001 (phish)   Valid signature but clientData origin = phishing site  ->  HTTP 401; GET /api/me -> 401
+PASS  T4   Unauthenticated GET /api/students/S001 with no session cookie  ->  HTTP 401 {"error":"authentication required"}
+PASS  T5   S001           GET /api/students/S001  ->  HTTP 200; Ama Owusu, 2 enrollments
+PASS  T6   S001           GET /api/students/S002 (ID changed in URL)  ->  HTTP 403 {"error":"forbidden"}
+PASS  T7   S001           POST /api/courses/C101/grades/S001 {"grade":"A"}  ->  HTTP 403; grade before B+, after B+
+PASS  T8   L001           POST /api/courses/C101/grades/S002 {"grade":"A-"}  ->  HTTP 200; grade B -> A-; audit entry by L001
+PASS  X1   L001           POST grade in C102 (not assigned)  ->  HTTP 403; grade A -> A
+PASS  X2   L001           GET /api/students/S003 (not in L001's course)  ->  HTTP 403
+PASS  X3   L001           GET /api/students/S001 (in C101)  ->  HTTP 200; courses shown: C101
+PASS  X4   S001 code      Reuse S001 enrollment code to register attacker passkey  ->  HTTP 403
+PASS  X5   L001           POST /api/logout, then GET roster  ->  logout HTTP 200; roster HTTP 401
+
+15/15 passed. Evidence written to tests/results.md and tests/server-log.txt

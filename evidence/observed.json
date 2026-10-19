@@ -1,0 +1,8 @@
+{
+  "T1": "[8:22:38 AM] POST /api/register/verify -> 200 {\"ok\":true,\"userId\":\"S001\",\"credentialId\":\"Q4uix6K4Lw7QN2w1Ou2DEHXANp7EmuQXRRoQUgHdJKo\"}",
+  "T2": "[8:22:41 AM] POST /api/login/verify -> 200 {\"ok\":true,\"user\":{\"id\":\"S001\",\"role\":\"student\",\"displayName\":\"Ama Owusu (fictional)\"}}",
+  "T3": "--- T3a: tampered signature ---\nPOST /api/login/verify (altered signature) -> 401 {\"error\":\"sign-in failed\"}\nGET /api/me afterwards -> 401 (no session created: true)\n--- T3b: replay ---\n1st use of response -> 200 (legitimate sign-in)\nLogged out. Requesting a new challenge, then replaying the OLD signed response...\nReplayed response -> 401 {\"error\":\"sign-in failed\"}\nGET /api/me afterwards -> 401 (no session created: true)\n",
+  "T5_T7": "T5 GET /api/students/S001 -> 200 {\"id\":\"S001\",\"name\":\"Ama Owusu\",\"programme\":\"BSc Computer Science\",\"year\":3,\"email\":\"s001@example.edu\",\"enrollments\":[{\"studentId\":\"S001\",\"courseId\":\"C101\",\"grade\":\"B+\"},{\"studentId\":\"S001\",\"courseId\":\"C102\",\"grade\":\"A-\"}]}\nT6 GET /api/students/S002 -> 403 {\"error\":\"forbidden\"}\nT7 POST /api/courses/C101/grades/S001 {grade:\"A\"} -> 403 {\"error\":\"forbidden\"}\n   S001 C101 grade is still: B+\n",
+  "T4": "T4 (after logout) GET /api/students/S001 -> 401 {\"error\":\"authentication required\"}",
+  "T8": "[8:22:54 AM] POST /api/courses/C101/grades/S002 -> 200 {\"ok\":true,\"courseId\":\"C101\",\"studentId\":\"S002\",\"before\":\"B\",\"after\":\"A-\"}"
+}

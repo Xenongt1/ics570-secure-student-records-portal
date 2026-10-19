@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Security Tests (Lab)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="shell">
+   <div class="stage authed">
+    <aside class="showcase" aria-hidden="true"><div class="photo"></div></aside>
+
+    <main class="panel">
+      <div class="panel-top">
+        <a class="brand" href="/">
+          <svg class="logo" viewBox="0 0 28 28" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8542a"/><stop offset="1" stop-color="#e2456c"/></linearGradient></defs><path d="M14 2.5 4.5 6v7.2c0 6 4 10.4 9.5 12.3 5.5-1.9 9.5-6.3 9.5-12.3V6Z" fill="url(#lg)"/><circle cx="14" cy="12" r="2.6" fill="#fff"/><path d="M12.9 13.6h2.2l.7 5.2h-3.6Z" fill="#fff"/></svg>
+          Records Portal
+        </a>
+        <a class="link-btn" href="/">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 12H5m6-6-6 6 6 6"/></svg>
+          Back to portal
+        </a>
+      </div>
+
+      <div class="panel-body tests">
+        <div class="tests-head">
+          <p class="eyebrow">ICS570 · controlled local tests</p>
+          <h1 class="title">Security tests</h1>
+          <p class="lead">Run these with your real passkey. They send raw requests the normal portal never offers, so you can watch the server reject them.</p>
+        </div>
+
+        <div class="test-grid">
+          <section class="block">
+            <h3>Sign-in tampering</h3>
+            <label class="field">Account ID <span>(must already have a passkey)</span>
+              <input id="uid" class="pill" value="S001" />
+            </label>
+            <button id="t3a" class="test-row"><b>T3a</b><span>Tampered signature<small>Flip one bit of a real sign-in response</small></span><em>expect 401</em></button>
+            <button id="t3b" class="test-row"><b>T3b</b><span>Replay attack<small>Re-send a response that was already accepted</small></span><em>expect 401</em></button>
+          </section>
+
+          <section class="block">
+            <h3>Access control</h3>
+            <p class="note"><span class="dot"></span>Sign in as S001 on the portal first.</p>
+            <button id="t5" class="test-row"><b>T5</b><span>Read own record<small class="path">GET /api/students/S001</small></span><em class="ok">expect 200</em></button>
+            <button id="t6" class="test-row"><b>T6</b><span>Read someone else&rsquo;s record<small class="path">GET /api/students/S002</small></span><em>expect 403</em></button>
+            <button id="t7" class="test-row"><b>T7</b><span>Change a grade as a student<small class="path">POST /api/courses/C101/grades/S001</small></span><em>expect 403</em></button>
+            <button id="t4" class="test-row"><b>T4</b><span>Log out, then read record<small class="path">GET /api/students/S001 without a session</small></span><em>expect 401</em></button>
+          </section>
+        </div>
+
+        <section class="console">
+          <div class="console-bar"><i></i><i></i><i></i><span>Output</span></div>
+          <pre id="log"></pre>
+        </section>
+      </div>
+
+      <footer class="panel-foot">
+        <span>ICS570 lab build · synthetic data only</span>
+        <a href="/">Portal</a>
+      </footer>
+    </main>
+   </div>
+  </div>
+  <script src="/vendor/simplewebauthn-browser.js"></script>
+  <script>
+    const { startAuthentication } = SimpleWebAuthnBrowser;
+    const $ = (id) => document.getElementById(id);
+    const log = (m) => ($('log').textContent += m + '\n');
+    async function api(method, url, body) {
+      const r = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
+      let d = null; try { d = await r.json(); } catch {}
+      return { status: r.status, data: d };
+    }
+    const b64uToBytes = (s) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+    const bytesToB64u = (b) => btoa(String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    async function getAssertion(userId) {
+      const opts = await api('POST', '/api/login/options', { userId });
+      return startAuthentication({ optionsJSON: opts.data });
+    }
+
+    $('t3a').onclick = async () => {
+      log('--- T3a: tampered signature ---');
+      await api('POST', '/api/logout');
+      const resp = await getAssertion($('uid').value);
+      const sig = b64uToBytes(resp.response.signature);
+      sig[sig.length - 1] ^= 0x01; // flip one bit of the signature
+      resp.response.signature = bytesToB64u(sig);
+      const v = await api('POST', '/api/login/verify', resp);
+      log(`POST /api/login/verify (altered signature) -> ${v.status} ${JSON.stringify(v.data)}`);
+      const me = await api('GET', '/api/me');
+      log(`GET /api/me afterwards -> ${me.status} (no session created: ${me.status === 401})`);
+    };
+
+    $('t3b').onclick = async () => {
+      log('--- T3b: replay ---');
+      await api('POST', '/api/logout');
+      const resp = await getAssertion($('uid').value);
+      const first = await api('POST', '/api/login/verify', resp);
+      log(`1st use of response -> ${first.status} (legitimate sign-in)`);
+      await api('POST', '/api/logout');
+      log('Logged out. Requesting a new challenge, then replaying the OLD signed response...');
+      await api('POST', '/api/login/options', { userId: $('uid').value });
+      const replay = await api('POST', '/api/login/verify', resp);
+      log(`Replayed response -> ${replay.status} ${JSON.stringify(replay.data)}`);
+      const me = await api('GET', '/api/me');
+      log(`GET /api/me afterwards -> ${me.status} (no session created: ${me.status === 401})`);
+    };
+
+    $('t5').onclick = async () => { const r = await api('GET', '/api/students/S001'); log(`T5 GET /api/students/S001 -> ${r.status} ${JSON.stringify(r.data)}`); };
+    $('t6').onclick = async () => { const r = await api('GET', '/api/students/S002'); log(`T6 GET /api/students/S002 -> ${r.status} ${JSON.stringify(r.data)}`); };
+    $('t7').onclick = async () => {
+      const r = await api('POST', '/api/courses/C101/grades/S001', { grade: 'A' });
+      log(`T7 POST /api/courses/C101/grades/S001 {grade:"A"} -> ${r.status} ${JSON.stringify(r.data)}`);
+      const me = await api('GET', '/api/students/S001');
+      if (me.status === 200) log(`   S001 C101 grade is still: ${me.data.enrollments.find((e) => e.courseId === 'C101').grade}`);
+    };
+    $('t4').onclick = async () => {
+      await api('POST', '/api/logout');
+      const r = await api('GET', '/api/students/S001');
+      log(`T4 (after logout) GET /api/students/S001 -> ${r.status} ${JSON.stringify(r.data)}`);
+    };
+  </script>
+</body>
+</html>

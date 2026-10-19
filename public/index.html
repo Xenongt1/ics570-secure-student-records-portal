@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Student Records Portal (Lab)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="shell">
+   <div class="stage booting" id="stage">
+    <!-- Showcase panel: on sign-in it shrinks into the circle at the top-left -->
+    <aside class="showcase" aria-hidden="true">
+      <div class="photo"></div>
+      <div class="shade"></div>
+      <div class="show-copy">
+        <p class="tagline">Student records made safe. Passkey sign-in, no passwords to steal.</p>
+        <div class="hero">
+          <h1>Your records,<br />secured.</h1>
+          <p class="hero-sub"><span class="dot"></span>Phishing-resistant sign-in · role-based access</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Form panel -->
+    <main class="panel">
+      <div class="panel-top">
+        <a class="brand" href="/">
+          <svg class="logo" viewBox="0 0 28 28" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8542a"/><stop offset="1" stop-color="#e2456c"/></linearGradient></defs><path d="M14 2.5 4.5 6v7.2c0 6 4 10.4 9.5 12.3 5.5-1.9 9.5-6.3 9.5-12.3V6Z" fill="url(#lg)"/><circle cx="14" cy="12" r="2.6" fill="#fff"/><path d="M12.9 13.6h2.2l.7 5.2h-3.6Z" fill="#fff"/></svg>
+          Records Portal
+        </a>
+        <button id="mode-toggle" class="link-btn" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9.5"/><circle cx="12" cy="10" r="3"/><path d="M6.5 18.5c1.5-2.2 3.4-3.2 5.5-3.2s4 1 5.5 3.2"/></svg>
+          <span id="mode-label">Register</span>
+        </button>
+      </div>
+
+      <div class="panel-body">
+        <!-- Signed-out view -->
+        <section id="signed-out">
+          <div class="form" id="view-login">
+            <h2 class="title">Sign In</h2>
+            <p class="lead">Use the passkey saved on this device.</p>
+            <input id="login-id" class="pill" placeholder="Account ID (e.g. S001)" autocomplete="username webauthn" aria-label="Account ID" />
+            <button id="btn-login" class="cta">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-2"/><path d="M3 12h11m-3-3 3 3-3 3"/></svg>
+              Sign in with passkey
+            </button>
+            <p class="hint">First time here? <button type="button" class="inline-link" data-go="register">Register a passkey</button></p>
+          </div>
+
+          <div class="form" id="view-register" hidden>
+            <h2 class="title">Register</h2>
+            <p class="lead">First time only. Use your account ID and the one-time code from <code>npm run seed</code>.</p>
+            <input id="enroll-id" class="pill" placeholder="Account ID (e.g. S001)" autocomplete="off" aria-label="Account ID" />
+            <input id="enroll-code" class="pill mono" placeholder="Enrollment code" autocomplete="off" aria-label="Enrollment code" />
+            <button id="btn-register" class="cta">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="12" r="4"/><path d="M12 12h9m-3 0v3m-3-3v2"/></svg>
+              Register passkey
+            </button>
+            <p class="hint">Already registered? <button type="button" class="inline-link" data-go="login">Sign in</button></p>
+          </div>
+        </section>
+
+        <!-- Signed-in view -->
+        <section id="signed-in" hidden>
+          <div class="who">
+            <div class="avatar" id="avatar"></div>
+            <div>
+              <h2 id="welcome"></h2>
+              <p class="lead" id="role-line"></p>
+            </div>
+            <button id="btn-logout" class="ghost">Log out</button>
+          </div>
+
+          <div class="block" id="student-panel" hidden>
+            <h3>My record</h3>
+            <div id="my-record"></div>
+          </div>
+
+          <div class="block" id="lecturer-panel" hidden>
+            <h3>Course roster · C101</h3>
+            <div id="roster"></div>
+          </div>
+
+          <button id="btn-add-passkey" class="ghost wide">+ Add another passkey to this account</button>
+        </section>
+
+        <details class="activity">
+          <summary>Activity log</summary>
+          <pre id="log" aria-live="polite"></pre>
+        </details>
+      </div>
+
+      <footer class="panel-foot">
+        <span>ICS570 lab build · synthetic data only</span>
+        <a href="/security-tests.html">Security tests</a>
+      </footer>
+    </main>
+   </div>
+  </div>
+
+  <script src="/vendor/simplewebauthn-browser.js"></script>
+  <script src="/app.js"></script>
+  <script src="/ui.js"></script>
+</body>
+</html>
