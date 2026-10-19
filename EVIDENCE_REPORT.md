@@ -5,7 +5,7 @@ author: "Mubarak Tijani"
 
 The portal runs on Node.js 22 with Express 5, express-session and SimpleWebAuthn 13 (server and browser), and keeps its data in a JSON file. All accounts and grades are synthetic, and the RP ID is `localhost`. The evidence run used `http://localhost:3001` because another service held port 3000 on the test machine; `PORT` sets the port, and the default is 3000.
 
-# 1. T1 to T8 results
+# T1 to T8 results
 
 All tests were run on 19 October 2026 against a freshly seeded datastore. The browser screenshots were captured using Chromium's virtual WebAuthn authenticator driven by Playwright (`evidence/capture.mjs`). The script turns on a CTAP2 platform authenticator with resident keys and user verification through the Chrome DevTools Protocol, then works through the real portal UI: it enters the enrollment code, registers, signs in and clicks the security-test buttons. The authenticator creates real credentials and signatures, and the server verifies them with the same code it uses for any browser. Server output is in `evidence/server-log.txt`. `npm test` covers the same cases over HTTP with a software FIDO2 authenticator that makes real P-256 signatures, and it passed 15/15 (Figure 6, `tests/results.md`). Earlier that day I also registered S001 and S002 with Touch ID in my own browser and signed in as S002 (Figure 8). That run used the same server code, before the interface was restyled. The Observed column comes from the Playwright run.
 
@@ -23,7 +23,7 @@ All tests were run on 19 October 2026 against a freshly seeded datastore. The br
 
 `npm test` also ran five extra checks, all passing. A valid signature from a phishing origin (T3c) gets 401, and so does a request made after logout. L001 gets 403 when editing a grade in C102, a course L001 does not teach, and 403 when reading S003. Reusing an enrollment code also gets 403.
 
-# 2. Selected evidence
+# Selected evidence
 
 Figures 1 to 7 are crops of the full-page screenshots in `evidence/`, and the log text in them is unedited.
 
@@ -67,7 +67,7 @@ export function canUpdateGrade(user, courseId, studentId) {
 }
 ```
 
-# 3. Security interpretation
+# Security interpretation
 
 **A. Authentication vs authorization.** T2 proves only that the caller holds the private key for a passkey bound to S001. The server checked a fresh challenge, the origin, the RP ID and the signature against S001's stored public key, then stored `userId = S001` in the session. Permission is decided separately. In my code, `requireAuth` (server.js) only checks that a session exists and returns 401 when it does not (T4). Each protected route then calls `canReadStudent` or `canUpdateGrade` (policy.js), which check role, ownership and course assignment and deny by default. T6 and T7 were sent directly from the test page, outside the normal UI. Both returned 403 with `AUTHZ DENY` log entries, and the grade stayed B+.
 
@@ -75,6 +75,6 @@ export function canUpdateGrade(user, courseId, studentId) {
 
 **C. Transfer to SLS ProSit 2.** The closest match is the SLS Help Desk, where staff reset passwords and MFA enrollment using the same identity check for ordinary employees, Finance staff and privileged administrators. Phishing-resistant sign-in does not help if an attacker can talk the Help Desk into re-enrolling someone else's credential, because whoever controls recovery controls the account. Recovery should be authorized like any other privileged action: verify the caller through a channel the attacker does not control, require a second approver for Finance and administrator accounts, and alert the real owner. T6 and T7 apply the same rule in code. Reaching a function, whether a reset form or a help-desk phone line, should never be enough to use it on another person's account.
 
-# 4. AI / tools declaration
+# AI / tools declaration
 
 AI was used to help plan the application design and write parts of the code. It also helped draft parts of the README and this report, and it wrote the Part B demo script and the Playwright capture script. I checked the passkey flow myself by registering S001 and S002 with Touch ID and signing in as S002; the server returned 200 at each step (Figure 8). Libraries used: SimpleWebAuthn for WebAuthn verification, express-session for sessions, Playwright for the evidence screenshots, and Node `crypto` for hashing, test signatures and Part B. I did not write any cryptographic primitives myself.
