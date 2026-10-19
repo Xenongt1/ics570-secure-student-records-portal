@@ -17,6 +17,18 @@ A deliberately simple portal showing passkey (WebAuthn/FIDO2) authentication and
 
 ![Lecturer L001 course roster](evidence/T8_L001_updates_S002_grade.png)
 
+**Security test page:** tampered signature (T3a) and replayed sign-in (T3b) are both rejected with 401
+
+![T3a and T3b rejected](evidence/T3_tampered_and_replayed_rejected.png)
+
+**Security test page:** as S001, reading S002's record (T6) or changing a grade (T7) returns 403
+
+![T5, T6 and T7 direct requests](evidence/T5_T6_T7_direct_requests_S001.png)
+
+**Automated test run:** `npm test` passes 15/15
+
+![npm test output](evidence/npm_test_output.png)
+
 ## Prerequisites
 - Node.js 20 or newer (`node -v`)
 - Chrome, Edge or Safari, plus an authenticator: Windows Hello, Touch ID, a phone passkey (QR code), a security key, or the browser's passkey manager
