@@ -27,11 +27,23 @@ const RP_NAME = 'Student Records Portal (Lab)';
 const ALLOWED_GRADES = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'];
 
 // First run: seed synthetic data so `npm start` works straight after `npm install`.
-if (!fs.existsSync(db.DB_FILE)) seed();
-db.load();
+// The hosted demo loads (and if needed seeds) its datastore from Redis per request instead.
+if (!db.HOSTED) {
+  if (!fs.existsSync(db.DB_FILE)) seed();
+  db.load();
+}
+
+// Hosted demo only: sessions live in Redis so every serverless instance sees the same
+// session, including the stored challenge that sign-in consumes (replay protection).
+class RedisSessionStore extends session.Store {
+  get(sid, cb) { db.redis.get(`sess:${sid}`).then((s) => cb(null, s ?? null), cb); }
+  set(sid, sess, cb) { db.redis.set(`sess:${sid}`, sess, { ex: 30 * 60 }).then(() => cb?.(), cb); }
+  destroy(sid, cb) { db.redis.del(`sess:${sid}`).then(() => cb?.(), cb); }
+}
 
 const app = express();
 app.disable('x-powered-by');
+if (process.env.VERCEL) app.set('trust proxy', 1); // HTTPS ends at Vercel's proxy; needed for secure cookies
 app.use(express.json({ limit: '32kb' }));
 
 // Request log: method, path, status, user. No bodies, cookies, challenges or credentials are logged.
@@ -46,7 +58,9 @@ app.use((req, res, next) => {
 app.use(
   session({
     name: 'portal.sid',
+    store: db.HOSTED ? new RedisSessionStore() : undefined, // default in-memory store locally
     // Random per process unless set; sessions do not survive a restart (acceptable for a lab).
+    // The hosted demo sets SESSION_SECRET so all instances sign cookies the same way.
     secret: process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex'),
     resave: false,
     saveUninitialized: false,
@@ -58,6 +72,14 @@ app.use(
     },
   }),
 );
+
+// Hosted demo: load the current datastore from Redis before any API route runs.
+if (db.HOSTED) {
+  app.use('/api', async (req, res, next) => {
+    if (!(await db.refresh())) await seed();
+    next();
+  });
+}
 
 // Static UI + the SimpleWebAuthn browser bundle
 app.use(express.static(path.join(__dirname, '..', 'public')));
@@ -164,7 +186,7 @@ app.post('/api/register/verify', async (req, res) => {
     createdAt: new Date().toISOString(),
   });
   if (req.session.enrollUserId) user.enrollmentUsed = true; // enrollment code is single-use
-  db.save();
+  await db.save();
   console.log(`REGISTER OK user=${user.id} credential=${credential.id.slice(0, 8)}…`);
 
   // End the enrollment session; the user must now sign in with the passkey.
@@ -223,7 +245,7 @@ app.post('/api/login/verify', async (req, res) => {
 
   cred.counter = verification.authenticationInfo.newCounter;
   cred.lastUsedAt = new Date().toISOString();
-  db.save();
+  await db.save();
 
   await regenerate(req); // new session ID on login (prevents session fixation)
   req.session.userId = cred.userId;
@@ -274,7 +296,7 @@ app.get('/api/courses/:courseId/roster', requireAuth, (req, res) => {
   res.json({ courseId, title: db.findCourse(courseId).title, roster });
 });
 
-app.post('/api/courses/:courseId/grades/:studentId', requireAuth, (req, res) => {
+app.post('/api/courses/:courseId/grades/:studentId', requireAuth, async (req, res) => {
   const { courseId, studentId } = req.params;
   const decision = canUpdateGrade(req.user, courseId, studentId);
   if (!decision.allowed) {
@@ -288,7 +310,7 @@ app.post('/api/courses/:courseId/grades/:studentId', requireAuth, (req, res) => 
   const before = enrollment.grade;
   enrollment.grade = grade;
   db.load().gradeAudit.push({ at: new Date().toISOString(), by: req.user.id, courseId, studentId, before, after: grade });
-  db.save();
+  await db.save();
   console.log(`GRADE UPDATE by=${req.user.id} ${courseId}/${studentId} ${before} -> ${grade}`);
   res.json({ ok: true, courseId, studentId, before, after: grade });
 });
@@ -357,6 +379,33 @@ app.post('/api/students/:studentId/export', requireAuth, (req, res) => {
   });
 });
 
+// =====================================================================
+// 6. HOSTED DEMO ONLY: show unused enrollment codes and reset the demo
+// =====================================================================
+// On a public URL each one-time code can be used once, so the first visitor would
+// lock everyone else out. The Register page shows the unused codes, and anyone can
+// reset the demo: all passkeys and sessions are wiped and fresh codes are issued.
+// Codes stay single-use. These routes do not exist when running locally.
+if (db.HOSTED) {
+  app.get('/api/demo/accounts', (req, res) => {
+    const { users, demoCodes = {} } = db.load();
+    res.json(users.map((u) => ({ id: u.id, role: u.role, code: u.enrollmentUsed ? null : demoCodes[u.id] || null })));
+  });
+
+  app.post('/api/demo/reset', async (req, res) => {
+    await seed();
+    let cursor = '0';
+    do {
+      const [next, keys] = await db.redis.scan(cursor, { match: 'sess:*', count: 100 });
+      if (keys.length) await db.redis.del(...keys);
+      cursor = String(next);
+    } while (cursor !== '0');
+    console.log('DEMO RESET: passkeys and sessions wiped, new enrollment codes issued');
+    res.clearCookie('portal.sid');
+    res.json({ ok: true });
+  });
+}
+
 // Any other /api path: 404 (deny by default)
 app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
 
@@ -372,7 +421,11 @@ function printUnusedCodes() {
   for (const u of pending) console.log(`  ${u.id.padEnd(5)} ${u.role.padEnd(9)} code: ${codes[u.id] || '(unknown: run npm run seed -- --reset)'}`);
 }
 
-app.listen(PORT, () => {
-  console.log(`Student Records Portal listening on ${ORIGIN} (RP ID: ${RP_ID})`);
-  printUnusedCodes();
-});
+// Vercel imports the app and serves it; locally we listen on PORT.
+export default app;
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Student Records Portal listening on ${ORIGIN} (RP ID: ${RP_ID})`);
+    printUnusedCodes();
+  });
+}

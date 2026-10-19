@@ -1,0 +1,9 @@
+data/
+submission/
+evidence/
+tests/
+partB/
+*.docx
+*.md
+.env*
+.DS_Store

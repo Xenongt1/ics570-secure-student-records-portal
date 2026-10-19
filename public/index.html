@@ -54,7 +54,7 @@
 
           <div class="form" id="view-register" hidden>
             <h2 class="title">Register</h2>
-            <p class="lead">First time only. Use your account ID and the one-time code printed in the terminal when the server starts.</p>
+            <p class="lead" id="register-lead">First time only. Use your account ID and the one-time code printed in the terminal when the server starts.</p>
             <input id="enroll-id" class="pill" placeholder="Account ID (e.g. S001)" autocomplete="off" aria-label="Account ID" />
             <input id="enroll-code" class="pill mono" placeholder="Enrollment code" autocomplete="off" aria-label="Enrollment code" />
             <button id="btn-register" class="cta">
@@ -63,6 +63,10 @@
             </button>
             <p class="hint">Already registered? <button type="button" class="inline-link" data-go="login">Sign in</button></p>
             <p class="accounts">Test accounts: students <b>S001</b> <b>S002</b> <b>S003</b> · lecturers <b>L001</b> (C101) <b>L002</b> (C102)</p>
+            <div class="demo-accounts" id="demo-accounts" hidden>
+              <div id="demo-list"></div>
+              <button type="button" class="inline-link" id="demo-reset">Reset demo (wipes all passkeys, new codes)</button>
+            </div>
           </div>
         </section>
 
@@ -107,5 +111,6 @@
   <script src="/vendor/simplewebauthn-browser.js"></script>
   <script src="/app.js"></script>
   <script src="/ui.js"></script>
+  <script src="/demo.js"></script>
 </body>
 </html>

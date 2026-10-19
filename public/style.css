@@ -248,3 +248,17 @@ pre#log { margin: 12px 0 0; max-height: 200px; overflow: auto; background: #1d1a
 /* register view: list of seeded test accounts */
 .accounts { margin: 14px 0 0; font-size: 13px; color: var(--muted); text-align: center; }
 .accounts b { font-weight: 600; color: var(--ink); }
+
+/* register view, hosted demo only: seeded accounts with their unused codes */
+.demo-accounts { margin: 16px 0 0; text-align: center; }
+#demo-list { display: grid; gap: 6px; margin-bottom: 10px; }
+.demo-row {
+  display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 14px; font: inherit; font-size: 13px; text-align: left; color: var(--ink); cursor: pointer;
+  background: #fff; border: 1px solid var(--line); border-radius: 14px; transition: border-color .2s;
+}
+.demo-row:hover:not(:disabled) { border-color: var(--accent); }
+.demo-row:disabled { cursor: default; opacity: .55; }
+.demo-row span { color: var(--muted); }
+.demo-row code { font-family: ui-monospace, "SF Mono", Menlo, monospace; letter-spacing: .06em; }
+#demo-reset { font-size: 12.5px; }

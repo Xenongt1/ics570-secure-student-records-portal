@@ -4,6 +4,8 @@ A deliberately simple portal showing passkey (WebAuthn/FIDO2) authentication and
 
 **Stack:** Node.js 20+ · Express 5 · express-session · @simplewebauthn/server 13 and @simplewebauthn/browser 13 · JSON-file datastore (`data/db.json`).
 
+**Live demo:** https://ics570-records-portal.vercel.app. The hosted copy keeps its data in Upstash Redis; its Register page lists the unused one-time codes and has a *Reset demo* button that wipes all passkeys and issues new codes. Everything below describes the local run the lab asks for.
+
 ## Screenshots
 **Sign-in page** (passkey only, no passwords)
 

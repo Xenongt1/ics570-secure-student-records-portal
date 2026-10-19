@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { writeFresh, DB_FILE } from './db.js';
+import { writeFresh, DB_FILE, HOSTED } from './db.js';
 
 // Plain-text codes for whoever runs the lab, next to the datastore (data/ is gitignored).
 // Named after the datastore so the test run (test-db.json) never overwrites the real codes.
@@ -57,6 +57,12 @@ export function seed() {
     gradeAudit: [],
   };
 
+  if (HOSTED) {
+    // Hosted demo: no disk for the codes file, so the plain codes travel with the
+    // document for the Register page; the caller awaits the Redis write.
+    data.demoCodes = codes;
+    return writeFresh(data).then(() => codes);
+  }
   writeFresh(data);
   fs.writeFileSync(CODES_FILE, Object.entries(codes).map(([id, code]) => `${id} ${code}`).join('\n') + '\n');
   return codes;
@@ -64,7 +70,7 @@ export function seed() {
 
 // Run directly: `npm run seed` (first time) or `npm run seed -- --reset` (wipe and start over).
 // An existing datastore is kept by default so registered passkeys survive.
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   if (fs.existsSync(DB_FILE) && !process.argv.includes('--reset')) {
     console.log(`Datastore already exists at ${DB_FILE}; keeping it, so registered passkeys still work.`);
     console.log('To wipe everything (all passkeys) and print new enrollment codes, run: npm run seed -- --reset');
