@@ -4,6 +4,19 @@ A deliberately simple portal showing passkey (WebAuthn/FIDO2) authentication and
 
 **Stack:** Node.js 20+ · Express 5 · express-session · @simplewebauthn/server 13 and @simplewebauthn/browser 13 · JSON-file datastore (`data/db.json`).
 
+## Screenshots
+**Sign-in page** (passkey only, no passwords)
+
+![Sign-in page](evidence/T1_register_S001.png)
+
+**Student view:** S001 sees only their own record
+
+![Student S001 signed in](evidence/T2_signin_S001_record.png)
+
+**Lecturer view:** L001 edits grades for their assigned course (C101)
+
+![Lecturer L001 course roster](evidence/T8_L001_updates_S002_grade.png)
+
 ## Prerequisites
 - Node.js 20 or newer (`node -v`)
 - Chrome, Edge or Safari, plus an authenticator: Windows Hello, Touch ID, a phone passkey (QR code), a security key, or the browser's passkey manager
