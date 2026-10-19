@@ -58,6 +58,17 @@
           </section>
         </div>
 
+        <section class="block part-b">
+          <h3>Encrypted export · Part B</h3>
+          <p class="note-small">AES-256-GCM on the server, behind the same sign-in and permission checks as T5 and T6. The key stays in server memory and is never sent to the browser.</p>
+          <div class="row-grid">
+            <button id="b1" class="test-row"><b>1</b><span>Encrypt and decrypt my record<small class="path">POST /api/students/S001/export</small></span><em class="ok">expect match</em></button>
+            <button id="b2" class="test-row"><b>2</b><span>Fresh nonce<small>Same record, same key, encrypted twice</small></span><em class="ok">expect different</em></button>
+            <button id="b3" class="test-row"><b>3</b><span>Tamper with a copy<small>Flip one ciphertext bit, then one tag bit</small></span><em>expect rejected</em></button>
+            <button id="b4" class="test-row"><b>4</b><span>Export someone else&rsquo;s record<small class="path">POST /api/students/S002/export</small></span><em>expect 403</em></button>
+          </div>
+        </section>
+
         <section class="console">
           <div class="console-bar"><i></i><i></i><i></i><span>Output</span></div>
           <pre id="log"></pre>
@@ -129,6 +140,41 @@
       await api('POST', '/api/logout');
       const r = await api('GET', '/api/students/S001');
       log(`T4 (after logout) GET /api/students/S001 -> ${r.status} ${JSON.stringify(r.data)}`);
+    };
+
+    // Part B: the server encrypts, decrypts and tamper-tests the export; each button shows one step.
+    const exportS001 = async () => {
+      const r = await api('POST', '/api/students/S001/export');
+      if (r.status !== 200) log(`POST /api/students/S001/export -> ${r.status} ${JSON.stringify(r.data)}`);
+      return r.status === 200 ? r.data : null;
+    };
+    $('b1').onclick = async () => {
+      const d = await exportS001(); if (!d) return;
+      log('--- Part B 1: encrypt and decrypt (AES-256-GCM) ---');
+      log(`plaintext : S001 record, ${d.encrypt.plaintextBytes} bytes of JSON`);
+      log(`nonce     : ${d.encrypt.nonce} (12 bytes)`);
+      log(`ciphertext: ${d.encrypt.ciphertext}`);
+      log(`tag       : ${d.encrypt.tag} (16 bytes)`);
+      log(`decrypted === original: ${d.decrypt.matchesOriginal}`);
+    };
+    $('b2').onclick = async () => {
+      const d = await exportS001(); if (!d) return;
+      log('--- Part B 2: same record, same key, encrypted twice ---');
+      log(`nonce A: ${d.freshNonce.nonceA}`);
+      log(`nonce B: ${d.freshNonce.nonceB}`);
+      log(`nonces differ: ${d.freshNonce.noncesDiffer} | ciphertexts differ: ${d.freshNonce.ciphertextsDiffer}`);
+    };
+    $('b3').onclick = async () => {
+      const d = await exportS001(); if (!d) return;
+      log('--- Part B 3: tamper detection (each on its own modified copy) ---');
+      log(`ciphertext byte 5 flipped: ${d.tamper.ciphertextByte5Flipped}`);
+      log(`tag byte 0 flipped       : ${d.tamper.tagByte0Flipped}`);
+      log(`original still decrypts : ${d.tamper.originalStillDecrypts}`);
+    };
+    $('b4').onclick = async () => {
+      const r = await api('POST', '/api/students/S002/export');
+      log(`--- Part B 4: encryption does not replace authorization ---`);
+      log(`POST /api/students/S002/export as S001 -> ${r.status} ${JSON.stringify(r.data)}`);
     };
   </script>
   <script src="/test-ui.js"></script>

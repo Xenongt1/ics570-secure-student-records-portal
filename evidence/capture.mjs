@@ -1,9 +1,10 @@
-// Evidence capture for T1-T8 against the running portal, using Playwright + Chromium.
+// Evidence capture for T1-T8 and Part B against the running portal, using Playwright + Chromium.
 // Passkeys come from Chromium's CDP virtual WebAuthn authenticator, so the real browser
 // WebAuthn flow and the real server-side verification are exercised end to end.
 //
-// Usage:  BASE_URL=http://localhost:3000 S001_CODE=<code> L001_CODE=<code> node evidence/capture.mjs
-// (enrollment codes come from `npm run seed`; they are read from the environment, never stored here)
+// Usage:  BASE_URL=http://localhost:3000 node evidence/capture.mjs
+// Enrollment codes are read from S001_CODE / L001_CODE if set, otherwise from the
+// gitignored data/db-enrollment-codes.txt written by the seed step; never stored here.
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -11,8 +12,12 @@ import { fileURLToPath } from 'node:url';
 
 const OUT = path.dirname(fileURLToPath(import.meta.url));
 const BASE = process.env.BASE_URL || 'http://localhost:3000';
-const CODES = { S001: process.env.S001_CODE, L001: process.env.L001_CODE };
-if (!CODES.S001 || !CODES.L001) throw new Error('Set S001_CODE and L001_CODE from `npm run seed`.');
+const codesFile = path.join(OUT, '..', 'data', 'db-enrollment-codes.txt');
+const seeded = fs.existsSync(codesFile)
+  ? Object.fromEntries(fs.readFileSync(codesFile, 'utf8').trim().split('\n').map((l) => l.trim().split(/\s+/)))
+  : {};
+const CODES = { S001: process.env.S001_CODE || seeded.S001, L001: process.env.L001_CODE || seeded.L001 };
+if (!CODES.S001 || !CODES.L001) throw new Error('No enrollment codes: run `npm run seed -- --reset` or set S001_CODE and L001_CODE.');
 
 const browser = await chromium.launch();
 
@@ -98,6 +103,16 @@ await shot(s.page, 'T5_T6_T7_direct_requests_S001');
 await s.page.click('#t4'); await waitForLog(s.page, 'T4 (after logout)');
 observed.T4 = (await logText(s.page)).split('\n').find((l) => l.startsWith('T4'));
 await shot(s.page, 'T4_no_session_denied');
+
+// ---- Part B: encrypted export from the security test page, signed in again as S001 ----
+await signIn(s.page, 'S001');
+await s.page.goto(`${BASE}/security-tests.html`);
+await s.page.click('#b1'); await waitForLog(s.page, 'decrypted === original');
+await s.page.click('#b2'); await waitForLog(s.page, 'nonces differ');
+await s.page.click('#b3'); await waitForLog(s.page, 'original still decrypts');
+await s.page.click('#b4'); await waitForLog(s.page, 'S002/export as S001');
+observed.PartB = await logText(s.page);
+await shot(s.page, 'PartB_encrypted_export_S001');
 await s.context.close();
 
 // ---- T8: L001 registers, signs in, updates S002's C101 grade ----

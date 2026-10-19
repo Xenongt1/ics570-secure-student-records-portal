@@ -33,7 +33,7 @@
   });
 
   // Warn before access-control tests that would only show 401 because there is no session.
-  ['t5', 't6', 't7'].forEach((id) =>
+  ['t5', 't6', 't7', 'b1', 'b2', 'b3', 'b4'].forEach((id) =>
     $(id).addEventListener('click', () => {
       if (!signedIn) say(`(${id.toUpperCase()}: you are not signed in, so expect 401, not the authorization result. Use "Sign in with passkey" first.)`);
     }, true),

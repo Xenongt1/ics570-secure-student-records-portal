@@ -3,8 +3,13 @@
 // (only its SHA-256 hash is stored) which is needed to register the first passkey.
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { writeFresh, DB_FILE } from './db.js';
+
+// Plain-text codes for whoever runs the lab, next to the datastore (data/ is gitignored).
+// Named after the datastore so the test run (test-db.json) never overwrites the real codes.
+export const CODES_FILE = path.join(path.dirname(DB_FILE), `${path.basename(DB_FILE, '.json')}-enrollment-codes.txt`);
 
 export const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const newCode = () => crypto.randomBytes(5).toString('hex').toUpperCase(); // e.g. 9F3A1C07B2
@@ -53,6 +58,7 @@ export function seed() {
   };
 
   writeFresh(data);
+  fs.writeFileSync(CODES_FILE, Object.entries(codes).map(([id, code]) => `${id} ${code}`).join('\n') + '\n');
   return codes;
 }
 
@@ -68,5 +74,6 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   console.log(`Seeded synthetic data into ${DB_FILE}`);
   console.log('One-time enrollment codes (synthetic, lab use only):');
   for (const [id, code] of Object.entries(codes)) console.log(`  ${id}  ${code}`);
+  console.log(`Also saved to ${CODES_FILE}; "npm start" lists the codes not yet used.`);
   console.log('Each code works once, to register that account\'s first passkey. Run "npm run seed -- --reset" to wipe everything and start over.');
 }

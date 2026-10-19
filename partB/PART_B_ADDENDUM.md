@@ -17,6 +17,12 @@ The script is `partB/crypto-demo.js`, run with `node partB/crypto-demo.js`. It u
 | 2. Fresh nonce | Encrypts the same record twice with the same key | Different nonces and different ciphertexts (`nonces differ: true`, `ciphertexts differ: true`) |
 | 3. Integrity | Flips one bit of ciphertext byte 5 in one copy and one bit of tag byte 0 in a separate copy, then tries to decrypt each | Both throw `Unsupported state or unable to authenticate data`; no altered plaintext is returned. The untouched original still decrypts |
 
+The same steps also run inside the portal, in the *Encrypted export* section of the Security tests page. There the server encrypts the signed-in student's own record through `POST /api/students/:studentId/export`, which sits behind the same `requireAuth` and `canReadStudent` checks as T5 and T6. Signed in as S001, exporting S002's record returns 403 before any encryption happens (Figure 2).
+
+![](../evidence/report/figB_partB_portal.png){width=5.2in}
+
+*Figure 2: the portal's encrypted-export demo, signed in as S001. The key stays in server memory and never reaches the browser.*
+
 # Key protection
 
 The script generates the 256-bit key with `crypto.randomBytes(32)` when it starts, keeps it in memory, and never prints or saves it. Anyone holding the key can read every record it protects and forge records that pass the integrity check. In a real portal it would sit in a key-management service or hardware security module. Only the export service would be allowed to use it, each use would be logged, and the key would be rotated on a schedule. It would not appear in source code, configuration files or logs.

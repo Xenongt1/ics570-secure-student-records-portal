@@ -2,6 +2,7 @@
 // Authentication: WebAuthn passkeys verified server-side with @simplewebauthn/server.
 // Authorization: server-side RBAC + record-level checks in src/policy.js, applied on every protected route.
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
@@ -13,7 +14,7 @@ import {
   verifyAuthenticationResponse,
 } from '@simplewebauthn/server';
 import * as db from './db.js';
-import { sha256 } from './seed.js';
+import { sha256, seed, CODES_FILE } from './seed.js';
 import { canReadStudent, canUpdateGrade, canReadRoster, visibleEnrollments } from './policy.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,7 +26,9 @@ const ORIGIN = process.env.ORIGIN || `http://localhost:${PORT}`;
 const RP_NAME = 'Student Records Portal (Lab)';
 const ALLOWED_GRADES = ['A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'];
 
-db.load(); // fail fast if the datastore has not been seeded
+// First run: seed synthetic data so `npm start` works straight after `npm install`.
+if (!fs.existsSync(db.DB_FILE)) seed();
+db.load();
 
 const app = express();
 app.disable('x-powered-by');
@@ -290,9 +293,86 @@ app.post('/api/courses/:courseId/grades/:studentId', requireAuth, (req, res) => 
   res.json({ ok: true, courseId, studentId, before, after: grade });
 });
 
+// =====================================================================
+// 5. PART B: AES-256-GCM encrypted export of one student record
+// =====================================================================
+// Same steps as partB/crypto-demo.js, behind the same authentication and
+// authorization as GET /api/students/:studentId. The key is 256 random bits
+// per server process, held in memory only; it is never sent or logged.
+const EXPORT_KEY = crypto.randomBytes(32);
+
+function gcmEncrypt(plaintext) {
+  const nonce = crypto.randomBytes(12); // fresh 96-bit nonce for every encryption
+  const cipher = crypto.createCipheriv('aes-256-gcm', EXPORT_KEY, nonce);
+  const ciphertext = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
+  return { nonce, ciphertext, tag: cipher.getAuthTag() };
+}
+function gcmDecrypt({ nonce, ciphertext, tag }) {
+  try {
+    const decipher = crypto.createDecipheriv('aes-256-gcm', EXPORT_KEY, nonce);
+    decipher.setAuthTag(tag);
+    return { ok: true, plaintext: Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8') };
+  } catch (e) {
+    return { ok: false, error: e.message };
+  }
+}
+const flipBit = (buf, i) => { const copy = Buffer.from(buf); copy[i] ^= 0x01; return copy; };
+
+app.post('/api/students/:studentId/export', requireAuth, (req, res) => {
+  const { studentId } = req.params;
+  const decision = canReadStudent(req.user, studentId);
+  if (!decision.allowed) {
+    logDenied(req, `export:student/${studentId}`, decision.reason);
+    return res.status(403).json({ error: 'forbidden' });
+  }
+  const record = JSON.stringify({ ...db.findStudent(studentId), enrollments: visibleEnrollments(req.user, studentId) });
+
+  const a = gcmEncrypt(record);
+  const b = gcmEncrypt(record); // same record, same key, encrypted again
+  const decrypted = gcmDecrypt(a);
+  const tamperedCiphertext = gcmDecrypt({ ...a, ciphertext: flipBit(a.ciphertext, 5) });
+  const tamperedTag = gcmDecrypt({ ...a, tag: flipBit(a.tag, 0) });
+  const outcome = (r) => (r.ok ? 'decrypted (unexpected)' : `rejected: ${r.error}`);
+
+  console.log(`EXPORT by=${req.user.id} student=${studentId} aes-256-gcm`);
+  res.json({
+    encrypt: {
+      plaintextBytes: Buffer.byteLength(record),
+      nonce: a.nonce.toString('hex'),
+      ciphertext: `${a.ciphertext.subarray(0, 16).toString('hex')}… (${a.ciphertext.length} bytes)`,
+      tag: a.tag.toString('hex'),
+    },
+    decrypt: { matchesOriginal: decrypted.ok && decrypted.plaintext === record },
+    freshNonce: {
+      nonceA: a.nonce.toString('hex'),
+      nonceB: b.nonce.toString('hex'),
+      noncesDiffer: !a.nonce.equals(b.nonce),
+      ciphertextsDiffer: !a.ciphertext.equals(b.ciphertext),
+    },
+    tamper: {
+      ciphertextByte5Flipped: outcome(tamperedCiphertext),
+      tagByte0Flipped: outcome(tamperedTag),
+      originalStillDecrypts: gcmDecrypt(a).ok,
+    },
+  });
+});
+
 // Any other /api path: 404 (deny by default)
 app.use('/api', (req, res) => res.status(404).json({ error: 'not found' }));
 
+// Lab convenience: list enrollment codes for accounts that have not registered yet,
+// read from the gitignored file the seed step writes (db.json holds only hashes).
+function printUnusedCodes() {
+  const pending = db.load().users.filter((u) => !u.enrollmentUsed);
+  if (!pending.length) return console.log('All seeded accounts have registered a passkey.');
+  const codes = fs.existsSync(CODES_FILE)
+    ? Object.fromEntries(fs.readFileSync(CODES_FILE, 'utf8').trim().split('\n').map((l) => l.trim().split(/\s+/)))
+    : {};
+  console.log('Accounts waiting for a first passkey (synthetic, lab use only):');
+  for (const u of pending) console.log(`  ${u.id.padEnd(5)} ${u.role.padEnd(9)} code: ${codes[u.id] || '(unknown: run npm run seed -- --reset)'}`);
+}
+
 app.listen(PORT, () => {
   console.log(`Student Records Portal listening on ${ORIGIN} (RP ID: ${RP_ID})`);
+  printUnusedCodes();
 });

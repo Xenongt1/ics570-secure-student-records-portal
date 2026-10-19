@@ -2,7 +2,7 @@
 > secure-student-records-portal@1.0.0 test
 > node tests/run-tests.js
 
-PASS  T1   S001           Enroll with one-time code, register passkey  ->  HTTP 200; credential o_7ovNfj9w… stored for S001, publicKey 103 chars (b64url COSE)
+PASS  T1   S001           Enroll with one-time code, register passkey  ->  HTTP 200; credential oN_wg1JHdq… stored for S001, publicKey 103 chars (b64url COSE)
 PASS  T2   S001           Sign in with registered passkey  ->  HTTP 200; GET /api/me -> 200 (S001, student)
 PASS  T3a  S001 (altered) Submit sign-in response with 1 bit of signature flipped  ->  HTTP 401 {"error":"sign-in failed"}; GET /api/me -> 401
 PASS  T3b  S001 (replay)  Replay a previously accepted sign-in response  ->  1st use HTTP 200; replay HTTP 401; GET /api/me -> 401
