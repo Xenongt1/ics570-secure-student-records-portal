@@ -1,10 +1,10 @@
 Student Records Portal listening on http://localhost:3100 (RP ID: localhost)
 Accounts waiting for a first passkey (synthetic, lab use only):
-  S001  student   code: 66CBFFBCD0
-  S002  student   code: 14AA946608
-  S003  student   code: 0CD1D78D2C
-  L001  lecturer  code: 6AA870E9EC
-  L002  lecturer  code: 7558CCC452
+  S001  student   code: [redacted]
+  S002  student   code: [redacted]
+  S003  student   code: [redacted]
+  L001  lecturer  code: [redacted]
+  L002  lecturer  code: [redacted]
 2026-10-19T20:46:44.713Z POST /api/enroll/start -> 200 user=-
 2026-10-19T20:46:44.719Z POST /api/register/options -> 200 user=-
 REGISTER OK user=S001 credential=oN_wg1JH…
