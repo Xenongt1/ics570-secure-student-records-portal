@@ -2,6 +2,7 @@
 // assignment and fictional grades. Each account gets a one-time enrollment code
 // (only its SHA-256 hash is stored) which is needed to register the first passkey.
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { writeFresh, DB_FILE } from './db.js';
 
@@ -55,11 +56,17 @@ export function seed() {
   return codes;
 }
 
-// Run directly: `npm run seed`
+// Run directly: `npm run seed` (first time) or `npm run seed -- --reset` (wipe and start over).
+// An existing datastore is kept by default so registered passkeys survive.
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  if (fs.existsSync(DB_FILE) && !process.argv.includes('--reset')) {
+    console.log(`Datastore already exists at ${DB_FILE}; keeping it, so registered passkeys still work.`);
+    console.log('To wipe everything (all passkeys) and print new enrollment codes, run: npm run seed -- --reset');
+    process.exit(0);
+  }
   const codes = seed();
   console.log(`Seeded synthetic data into ${DB_FILE}`);
   console.log('One-time enrollment codes (synthetic, lab use only):');
   for (const [id, code] of Object.entries(codes)) console.log(`  ${id}  ${code}`);
-  console.log('Each code works once, to register that account\'s first passkey. Re-run "npm run seed" to reset everything.');
+  console.log('Each code works once, to register that account\'s first passkey. Run "npm run seed -- --reset" to wipe everything and start over.');
 }

@@ -12,11 +12,11 @@ A deliberately simple portal showing passkey (WebAuthn/FIDO2) authentication and
 ## Install and run
 ```bash
 npm install
-npm run seed      # creates data/db.json and prints a one-time enrollment code per account
+npm run seed      # first run only: creates data/db.json and prints one-time enrollment codes
 npm start         # http://localhost:3000
 npm test          # automated T1 to T8 matrix on port 3100 with its own test datastore
 ```
-`npm run seed` resets everything, including all registered passkeys. It prints new codes each time.
+Passkeys and grades persist in `data/db.json` across restarts. `npm run seed` will not overwrite it; `npm run seed -- --reset` wipes everything and prints new codes.
 
 ## Test accounts (fictional)
 **S001** student (C101, C102) · **S002** student (C101) · **S003** student (C102) · **L001** lecturer, assigned to **C101** · **L002** lecturer (C102)
@@ -29,14 +29,14 @@ npm test          # automated T1 to T8 matrix on port 3100 with its own test dat
 ## Repeating T1 to T8
 **Automated (all tests):** run `npm test`. It uses a software authenticator (real P-256 signatures via Node `crypto`) through the same server verification code. It writes `tests/results.md` and `tests/server-log.txt`.
 
-**Browser screenshots (optional):** after a fresh seed, with the server running: `npm install --no-save playwright && npx playwright install chromium`, then `S001_CODE=<code> L001_CODE=<code> node evidence/capture.mjs` (Chromium virtual WebAuthn authenticator).
+**Browser screenshots (optional):** after `npm run seed -- --reset`, with the server running: `npm install --no-save playwright && npx playwright install chromium`, then `S001_CODE=<code> L001_CODE=<code> node evidence/capture.mjs` (Chromium virtual WebAuthn authenticator).
 
 **Manually in a browser (real passkey):**
 
-1. **T1:** `npm run seed`, then `npm start`. On the portal, click *Register* (top right), enter `S001` and its code, then click *Register passkey* and approve the prompt.
+1. **T1:** `npm run seed -- --reset`, then `npm start`. On the portal, click *Register* (top right), enter `S001` and its code, then click *Register passkey* and approve the prompt.
 2. **T2:** under *Sign in*, enter `S001`, click *Sign in* and approve. You should see S001's record.
-3. **T3:** open `/security-tests.html`. Click **T3a** (tampered signature) and **T3b** (replay). Both should return 401, `/api/me` should return 401, and the server terminal shows `LOGIN FAIL` lines.
-4. **T5, T6, T7:** sign in as S001 on the portal, then use the buttons on the test page. Alternatively, run these in the DevTools console:
+3. **T3:** open `/security-tests.html`. Click **T3a** and **T3b**. Both should return 401 with `LOGIN FAIL` in the server terminal, and both leave you signed out.
+4. **T5, T6, T7:** click *Sign in with passkey* on the test page (as S001), then use the buttons. Alternatively, run these in the DevTools console:
    ```js
    fetch('/api/students/S002').then(r => r.status)                                  // T6 -> 403
    fetch('/api/courses/C101/grades/S001', {method:'POST', headers:{'Content-Type':'application/json'}, body:'{"grade":"A"}'}).then(r => r.status)  // T7 -> 403

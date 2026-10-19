@@ -1,10 +1,10 @@
 # Security test results
 
-Run: 2026-10-19T08:31:46.511Z · server http://localhost:3100 · Node v22.20.0 · 15/15 passed
+Run: 2026-10-19T14:24:44.771Z · server http://localhost:3100 · Node v22.20.0 · 15/15 passed
 
 | Test | Identity | Action | Expected | Observed | Result |
 |---|---|---|---|---|---|
-| T1 | S001 | Enroll with one-time code, register passkey | Credential bound to S001; public key stored | HTTP 200; credential u2dIN6axqa… stored for S001, publicKey 103 chars (b64url COSE) | PASS |
+| T1 | S001 | Enroll with one-time code, register passkey | Credential bound to S001; public key stored | HTTP 200; credential VQwlF6HWtK… stored for S001, publicKey 103 chars (b64url COSE) | PASS |
 | T2 | S001 | Sign in with registered passkey | Fresh challenge verified; session created | HTTP 200; GET /api/me -> 200 (S001, student) | PASS |
 | T3a | S001 (altered) | Submit sign-in response with 1 bit of signature flipped | Rejected; no session | HTTP 401 {"error":"sign-in failed"}; GET /api/me -> 401 | PASS |
 | T3b | S001 (replay) | Replay a previously accepted sign-in response | Rejected (challenge mismatch); no session | 1st use HTTP 200; replay HTTP 401; GET /api/me -> 401 | PASS |

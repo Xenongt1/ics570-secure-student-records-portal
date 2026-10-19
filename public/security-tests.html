@@ -36,6 +36,7 @@
         <div class="test-grid">
           <section class="block">
             <h3>Sign-in tampering</h3>
+            <p class="note-small">Both tests end with you signed out. Sign in again before running T5 to T7.</p>
             <label class="field">Account ID <span>(must already have a passkey)</span>
               <input id="uid" class="pill" value="S001" />
             </label>
@@ -45,7 +46,11 @@
 
           <section class="block">
             <h3>Access control</h3>
-            <p class="note"><span class="dot"></span>Sign in as S001 on the portal first.</p>
+            <div class="session-bar" id="session-bar">
+              <span class="dot" id="session-dot"></span><span id="session-text">Checking sign-in…</span>
+              <button type="button" class="ghost" id="session-signin" hidden>Sign in with passkey</button>
+            </div>
+            <p class="note-small">T5 to T7 need a signed-in session. Without one the server answers 401 before it ever checks permissions.</p>
             <button id="t5" class="test-row"><b>T5</b><span>Read own record<small class="path">GET /api/students/S001</small></span><em class="ok">expect 200</em></button>
             <button id="t6" class="test-row"><b>T6</b><span>Read someone else&rsquo;s record<small class="path">GET /api/students/S002</small></span><em>expect 403</em></button>
             <button id="t7" class="test-row"><b>T7</b><span>Change a grade as a student<small class="path">POST /api/courses/C101/grades/S001</small></span><em>expect 403</em></button>
@@ -126,5 +131,6 @@
       log(`T4 (after logout) GET /api/students/S001 -> ${r.status} ${JSON.stringify(r.data)}`);
     };
   </script>
+  <script src="/test-ui.js"></script>
 </body>
 </html>
